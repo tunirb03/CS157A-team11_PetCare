@@ -1,0 +1,2 @@
+Copy the same mysql-connector-j jar you have under "Referenced Libraries" into this folder.
+Tomcat only loads jars from WEB-INF/lib, not from the Eclipse build path.

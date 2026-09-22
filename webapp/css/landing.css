@@ -1,0 +1,217 @@
+/* Welcome pages: white with soft yellow and ochre spots */
+:root {
+  --white: #FFFEFA;
+  --yellow: #F4C542;
+  --ochre: #C98F1E;
+  --brown: #6B4A0E;
+  --ink: #2B2416;
+  --muted: #6E6250;
+  --font-body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-title: "Grandstander", "Comic Sans MS", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+
+body.landing {
+  min-height: 100vh;
+  background: var(--white);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* The spots: a fixed layer behind everything, kept faint so they blend in */
+body.landing::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 90px at 8% 14%,  rgba(244,197,66,.30) 55%, transparent 100%),
+    radial-gradient(circle 38px at 24% 36%, rgba(201,143,30,.22) 55%, transparent 100%),
+    radial-gradient(circle 60px at 40% 8%,  rgba(244,197,66,.24) 55%, transparent 100%),
+    radial-gradient(circle 26px at 55% 28%, rgba(201,143,30,.25) 55%, transparent 100%),
+    radial-gradient(circle 120px at 88% 10%, rgba(244,197,66,.22) 55%, transparent 100%),
+    radial-gradient(circle 46px at 70% 48%, rgba(244,197,66,.26) 55%, transparent 100%),
+    radial-gradient(circle 70px at 14% 74%, rgba(201,143,30,.18) 55%, transparent 100%),
+    radial-gradient(circle 30px at 34% 90%, rgba(244,197,66,.30) 55%, transparent 100%),
+    radial-gradient(circle 100px at 60% 96%, rgba(244,197,66,.20) 55%, transparent 100%),
+    radial-gradient(circle 34px at 92% 62%, rgba(201,143,30,.22) 55%, transparent 100%),
+    radial-gradient(circle 20px at 46% 62%, rgba(201,143,30,.20) 55%, transparent 100%),
+    radial-gradient(circle 54px at 80% 84%, rgba(244,197,66,.26) 55%, transparent 100%);
+}
+
+a { color: var(--brown); }
+
+:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; border-radius: 6px; }
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 13px 26px;
+  border-radius: 999px;
+  border: 2px solid var(--ochre);
+  font: 700 1.05rem/1.2 var(--font-body);
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: transform .15s ease, background-color .15s ease;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--ochre); color: #FFFFFF; }
+.btn-primary:hover { background: #B37D14; }
+.btn-outline { background: rgba(255,255,255,.7); color: var(--brown); }
+.btn-outline:hover { background: #FFF3D1; }
+.btn-block { display: block; width: 100%; margin-top: 22px; }
+
+/* Home page */
+.home {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: 80px clamp(24px, 7vw, 110px);
+}
+
+.home-copy { max-width: 560px; position: relative; z-index: 1; }
+
+.title {
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: clamp(2.8rem, 7.5vw, 5.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.01em;
+  color: var(--brown);
+  margin: 0 0 20px;
+}
+
+.subtitle { font-size: 1.2rem; color: var(--muted); max-width: 34ch; margin: 0 0 32px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 14px; }
+
+/* The girl sits in the corner, faded into the page */
+.home-girl {
+  position: fixed;
+  right: -2vw;
+  bottom: 0;
+  width: min(56vw, 720px);
+  height: auto;
+  opacity: 0.42;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%),
+                      linear-gradient(to right, transparent 0%, #000 22%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, #000 60%, transparent 100%),
+              linear-gradient(to right, transparent 0%, #000 22%);
+  mask-composite: intersect;
+  animation: drift-in 1.2s ease-out both;
+}
+
+@keyframes drift-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 0.42; transform: none; }
+}
+
+/* Inner pages */
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 28px clamp(20px, 5vw, 48px) 64px;
+}
+
+.back {
+  display: inline-block;
+  margin-bottom: 28px;
+  font-weight: 700;
+}
+
+.page-title {
+  font-family: var(--font-title);
+  font-weight: 800;
+  font-size: clamp(2rem, 4.5vw, 3.2rem);
+  line-height: 1.05;
+  color: var(--brown);
+  margin: 0 0 12px;
+}
+
+/* Choose owner or sitter */
+.choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  gap: 40px;
+  margin-top: 36px;
+}
+
+.choice { text-align: center; }
+.choice h2 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  color: var(--ink);
+  margin: 10px 0 16px;
+}
+
+.pet { display: block; margin: 0 auto; height: auto; opacity: 0.88; }
+.pet-dog { width: min(230px, 70%); }
+.pet-cat { width: min(230px, 70%); }
+
+/* Account form */
+.account {
+  display: grid;
+  grid-template-columns: 0.9fr 1fr;
+  align-items: center;
+  gap: 48px;
+  margin-top: 8px;
+}
+
+.pet-snake {
+  width: min(400px, 100%);
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  opacity: 0.75;
+  -webkit-mask-image: radial-gradient(circle, #000 52%, transparent 71%);
+  mask-image: radial-gradient(circle, #000 52%, transparent 71%);
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.78);
+  border: 2px solid rgba(201, 143, 30, 0.35);
+  border-radius: 24px;
+  padding: 30px 32px;
+  backdrop-filter: blur(6px);
+}
+.panel .page-title { font-size: clamp(1.7rem, 3.4vw, 2.3rem); margin-bottom: 18px; }
+
+label { display: block; font-weight: 700; margin: 14px 0 6px; }
+
+input[type="text"], input[type="email"], input[type="password"] {
+  width: 100%;
+  padding: 11px 14px;
+  font: inherit;
+  color: var(--ink);
+  background: #FFFFFF;
+  border: 2px solid #E6D6AE;
+  border-radius: 12px;
+}
+input:focus { outline: none; border-color: var(--ochre); box-shadow: 0 0 0 3px rgba(244,197,66,.45); }
+
+.switch { margin: 18px 0 0; text-align: center; color: var(--muted); }
+
+/* Small screens */
+@media (max-width: 760px) {
+  .home { align-items: flex-start; padding-top: 110px; }
+  .home-girl { width: 100vw; right: -10vw; opacity: 0.28; animation: none; }
+  .choices, .account { grid-template-columns: 1fr; }
+  .pet-snake { width: min(260px, 80%); margin: 0 auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-girl { animation: none; }
+  .btn { transition: none; }
+}

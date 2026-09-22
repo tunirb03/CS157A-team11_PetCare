@@ -1,0 +1,16 @@
+<aside class="sidebar">
+  <a class="brand" href="dashboard.jsp">PetCare<br>Manager</a>
+  <nav aria-label="Database tables">
+    <p class="nav-title">Tables</p>
+    <% if (tables.isEmpty()) { %>
+      <p class="nav-empty">No tables to show yet.</p>
+    <% } else { %>
+      <ul>
+        <% for (String t : tables) { %>
+          <li><a href="table.jsp?name=<%= url(t) %>"<%= t.equals(current) ? " class=\"active\" aria-current=\"page\"" : "" %>><%= esc(friendly(t)) %></a></li>
+        <% } %>
+      </ul>
+    <% } %>
+  </nav>
+  <a class="nav-back" href="index.jsp">Back to welcome page</a>
+</aside>

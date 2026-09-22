@@ -1,0 +1,24 @@
+.sound-toggle {
+  position: fixed;
+  top: 16px;
+  right: 18px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 10px;
+  border: 2px solid #C98F1E;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #6B4A0E;
+  font: 700 0.9rem/1 "Atkinson Hyperlegible", system-ui, sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+.sound-toggle:hover { background: #FFF6DC; }
+.sound-toggle:focus-visible { outline: 3px solid #F4C542; outline-offset: 2px; }
+.sound-toggle svg { width: 20px; height: 20px; fill: currentColor; }
+.sound-toggle .icon-on { display: none; }
+.sound-toggle[aria-pressed="true"] { background: #F4C542; color: #3B2A08; }
+.sound-toggle[aria-pressed="true"] .icon-on { display: block; }
+.sound-toggle[aria-pressed="true"] .icon-off { display: none; }

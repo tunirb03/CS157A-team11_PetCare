@@ -1,0 +1,95 @@
+<%@ page import="java.sql.*, java.util.*, java.io.*" %>
+<%!
+    // Reads WEB-INF/db.properties
+    private Properties loadDbProps(ServletContext ctx) throws IOException {
+        Properties p = new Properties();
+        try (InputStream in = ctx.getResourceAsStream("/WEB-INF/db.properties")) {
+            if (in == null) throw new IOException("Could not find WEB-INF/db.properties");
+            p.load(in);
+        }
+        return p;
+    }
+
+    private Connection openConnection(ServletContext ctx) throws Exception {
+        Properties p = loadDbProps(ctx);
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        return DriverManager.getConnection(
+            p.getProperty("db.url"), p.getProperty("db.user"), p.getProperty("db.password"));
+    }
+
+    // Table names come straight from MySQL, so the page only ever queries tables that exist
+    private List<String> listTables(Connection c) throws SQLException {
+        List<String> names = new ArrayList<>();
+        try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery("SHOW TABLES")) {
+            while (rs.next()) names.add(rs.getString(1));
+        }
+        return names;
+    }
+
+    private String quote(String table) {
+        return "`" + table.replace("`", "``") + "`";
+    }
+
+    private long countRows(Connection c, String table) throws SQLException {
+        try (Statement s = c.createStatement();
+             ResultSet rs = s.executeQuery("SELECT COUNT(*) FROM " + quote(table))) {
+            return rs.next() ? rs.getLong(1) : 0;
+        }
+    }
+
+    // "booking_pet" -> "Booking pet"
+    private String friendly(String table) {
+        String s = table.replace('_', ' ').toLowerCase();
+        return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    private String esc(Object o) {
+        if (o == null) return "";
+        String s = String.valueOf(o);
+        StringBuilder b = new StringBuilder(s.length());
+        for (char ch : s.toCharArray()) {
+            switch (ch) {
+                case '<': b.append("&lt;"); break;
+                case '>': b.append("&gt;"); break;
+                case '&': b.append("&amp;"); break;
+                case '"': b.append("&quot;"); break;
+                case '\'': b.append("&#39;"); break;
+                default: b.append(ch);
+            }
+        }
+        return b.toString();
+    }
+
+    private String url(String s) {
+        try { return java.net.URLEncoder.encode(s, "UTF-8"); }
+        catch (Exception e) { return s; }
+    }
+
+    // Colors status values (booking and payment) the same way everywhere
+    private String chipClass(String value) {
+        if (value == null) return null;
+        String v = value.trim().toLowerCase();
+        if (v.equals("requested") || v.equals("pending")) return "chip-requested";
+        if (v.equals("confirmed") || v.equals("paid")) return "chip-confirmed";
+        if (v.equals("in progress") || v.equals("in_progress")) return "chip-progress";
+        if (v.equals("completed")) return "chip-completed";
+        if (v.equals("cancelled") || v.equals("canceled") || v.equals("refunded")) return "chip-cancelled";
+        return null;
+    }
+
+    // Turns common connection errors into a plain next step
+    private String hintFor(Exception e) {
+        String m = String.valueOf(e.getMessage());
+        if (e instanceof ClassNotFoundException)
+            return "The MySQL driver is missing. Copy mysql-connector-j-*.jar into WEB-INF/lib, then restart Tomcat.";
+        if (m.contains("Access denied"))
+            return "MySQL rejected the username or password. Check db.user and db.password in WEB-INF/db.properties.";
+        if (m.contains("Unknown database"))
+            return "The database name in db.url does not exist. Use the schema name shown in MySQL Workbench.";
+        if (m.contains("Communications link failure"))
+            return "Tomcat could not reach MySQL. Start the MySQL server and check the port in db.url (usually 3306).";
+        if (m.contains("db.properties"))
+            return "Create WEB-INF/db.properties with your connection details.";
+        return "Check the connection details in WEB-INF/db.properties.";
+    }
+%>

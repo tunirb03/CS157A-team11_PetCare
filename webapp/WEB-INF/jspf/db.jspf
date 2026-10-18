@@ -1,10 +1,10 @@
 <%@ page import="java.sql.*, java.util.*, java.io.*" %>
 <%!
-    // Reads WEB-INF/db.properties
+    // Reads the database settings stored outside the public web pages.
     private Properties loadDbProps(ServletContext ctx) throws IOException {
         Properties p = new Properties();
-        try (InputStream in = ctx.getResourceAsStream("/WEB-INF/db.properties")) {
-            if (in == null) throw new IOException("Could not find WEB-INF/db.properties");
+        try (InputStream in = ctx.getResourceAsStream("/META-INF/db.properties")) {
+            if (in == null) throw new IOException("Could not find META-INF/db.properties");
             p.load(in);
         }
         return p;
@@ -83,13 +83,55 @@
         if (e instanceof ClassNotFoundException)
             return "The MySQL driver is missing. Copy mysql-connector-j-*.jar into WEB-INF/lib, then restart Tomcat.";
         if (m.contains("Access denied"))
-            return "MySQL rejected the username or password. Check db.user and db.password in WEB-INF/db.properties.";
+            return "MySQL rejected the username or password. Check db.user and db.password in META-INF/db.properties.";
         if (m.contains("Unknown database"))
             return "The database name in db.url does not exist. Use the schema name shown in MySQL Workbench.";
         if (m.contains("Communications link failure"))
             return "Tomcat could not reach MySQL. Start the MySQL server and check the port in db.url (usually 3306).";
         if (m.contains("db.properties"))
-            return "Create WEB-INF/db.properties with your connection details.";
-        return "Check the connection details in WEB-INF/db.properties.";
+            return "Create META-INF/db.properties with your connection details.";
+        return "Check the connection details in META-INF/db.properties.";
+    }
+
+    private String hashPassword(String password) throws Exception {
+        byte[] salt = new byte[16];
+        new java.security.SecureRandom().nextBytes(salt);
+        byte[] hash = derivePassword(password, salt);
+        return java.util.Base64.getEncoder().encodeToString(salt) + ":" +
+               java.util.Base64.getEncoder().encodeToString(hash);
+    }
+
+    private byte[] derivePassword(String password, byte[] salt) throws Exception {
+        javax.crypto.spec.PBEKeySpec spec = new javax.crypto.spec.PBEKeySpec(
+            password.toCharArray(), salt, 120000, 256);
+        try {
+            return javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+                .generateSecret(spec).getEncoded();
+        } finally { spec.clearPassword(); }
+    }
+
+    private boolean verifyPassword(String password, String stored) throws Exception {
+        String[] parts = stored == null ? new String[0] : stored.split(":", 2);
+        if (parts.length != 2) return false;
+        byte[] salt = java.util.Base64.getDecoder().decode(parts[0]);
+        byte[] expected = java.util.Base64.getDecoder().decode(parts[1]);
+        byte[] actual = derivePassword(password, salt);
+        return java.security.MessageDigest.isEqual(expected, actual);
+    }
+
+    private int intParam(String value, int fallback) {
+        try { return Integer.parseInt(value); } catch (Exception e) { return fallback; }
+    }
+
+    private double doubleParam(String value, double fallback) {
+        try { return Double.parseDouble(value); } catch (Exception e) { return fallback; }
+    }
+
+    private boolean isLoggedIn(jakarta.servlet.http.HttpSession session) {
+        return session != null && session.getAttribute("userId") != null;
+    }
+
+    private boolean isSitter(jakarta.servlet.http.HttpSession session) {
+        return isLoggedIn(session) && "sitter".equals(session.getAttribute("role"));
     }
 %>

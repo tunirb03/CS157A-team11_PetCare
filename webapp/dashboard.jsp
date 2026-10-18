@@ -1,6 +1,15 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="/WEB-INF/jspf/db.jspf" %>
 <%
+    if (!isLoggedIn(session)) {
+        response.sendRedirect("index.jsp");
+        return;
+    }
+    if ("logout".equals(request.getParameter("action"))) {
+        session.invalidate();
+        response.sendRedirect("index.jsp");
+        return;
+    }
     List<String> tables = new ArrayList<>();
     Map<String, Long> counts = new LinkedHashMap<>();
     List<String[]> pets = new ArrayList<>();   // each entry: name, details
@@ -68,7 +77,10 @@
 
   <main class="main">
     <header class="page-head">
-      <h1>Your dashboard</h1>
+      <div>
+        <h1>Welcome, <%= esc(session.getAttribute("userName")) %></h1>
+        <p class="lede"><%= "sitter".equals(session.getAttribute("role")) ? "Business owner" : "Pet owner" %></p>
+      </div>
       <% if (error == null) { %>
         <div class="tag" role="status">
           <span class="tag-label">Connected to</span>
@@ -81,6 +93,14 @@
         </div>
       <% } %>
     </header>
+
+    <section class="ledger" style="padding: 1rem; margin-bottom: 2rem;">
+      <a class="btn btn-primary" href="pets.jsp">My pets</a>
+      <a class="btn btn-primary" href="services.jsp">Services</a>
+      <a class="btn btn-primary" href="bookings.jsp">Bookings</a>
+      <a class="btn btn-primary" href="payments.jsp">Payments</a>
+      <a class="btn btn-outline" href="dashboard.jsp?action=logout">Log out</a>
+    </section>
 
     <% if (error != null) { %>
       <section class="notice">

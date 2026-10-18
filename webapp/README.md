@@ -11,12 +11,17 @@ src/main/webapp/
 ├── account.jsp        Sign-up and log-in form
 ├── dashboard.jsp      Dashboard with your pets and database tables
 ├── table.jsp          Shows the rows of one table
+├── pets.jsp           Add, edit, and delete pet profiles
+├── services.jsp       Service directory and sitter service management
+├── bookings.jsp       Booking requests and sitter status management
+├── payments.jsp       Payment records and payment history
 ├── css/               Page styles
 ├── js/sound.js        The sound on/off button
 ├── assets/img/        Pictures (dog, cat, girl, snake)
 ├── assets/sound/      Background music
+├── META-INF/
+│   └── db.properties  Your MySQL login (you must edit this)
 └── WEB-INF/
-    ├── db.properties  Your MySQL login (you must edit this)
     └── jspf/          Shared page pieces and the database code
 ```
 
@@ -43,9 +48,17 @@ Put the `mysql-connector-j` jar file in `src/main/webapp/WEB-INF/lib/`. Create t
 
 Tomcat only loads jars from this folder. Adding the jar to the Eclipse Build Path is not enough.
 
-### 3. Change the schema name and password
+### 3. Create the PetCare tables
 
-Open `src/main/webapp/WEB-INF/db.properties`. It looks like this:
+Open `schema.sql` in MySQL Workbench and run it. It creates the `petcare`
+database and the 14 tables required by the proposal: `User`, `Client`,
+`Sitter`, `Address`, `Pet`, `Service`, `Booking`, `BookingPet`,
+`BookingService`, `CareInstruction`, `Payment`, `Review`, `CareEvent`,
+and `AuditLog`. The script also inserts demonstration data for screenshots.
+
+### 4. Change the schema name and password
+
+Open `src/main/webapp/META-INF/db.properties`. It looks like this:
 
 ```
 db.url=jdbc:mysql://localhost:3306/petcare?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
@@ -63,11 +76,11 @@ If your MySQL server uses a port other than 3306, change `3306` too.
 
 **Do not upload your real password to GitHub.** Before you commit, change the password back to `change_me`.
 
-### 4. Tell Eclipse which Tomcat to use
+### 5. Tell Eclipse which Tomcat to use
 
 Right-click your project > Properties > Targeted Runtimes > check your Apache Tomcat > Apply. This also clears most red error marks on JSP files.
 
-### 5. Run it
+### 6. Run it
 
 Right-click your project > Run As > Run on Server. Then open:
 
@@ -88,8 +101,12 @@ Replace `<your-project-name>` with your Eclipse project's name. Plain `http://lo
 
 ## Good to know
 
-- **Login is not checked yet.** The form does not save accounts or check passwords. Submitting it just opens the dashboard for now.
-- **The pets list reads a table named `Pet`** (or `pets`). It shows each pet's name, plus species and breed if those columns exist. If there is no Pet table yet, the box says "No pets yet."
+- **Authentication:** registration saves a `User` plus a `Client` or `Sitter` subclass account. Login checks a PBKDF2 password hash and creates a session.
+- **Pet profiles:** clients can add, edit, delete, and view their own pets.
+- **Services:** clients can view active services; sitters can add, edit, and deactivate services.
+- **Bookings:** clients can request a booking and cancel it. The sitter can update booking status. Overlapping active bookings are rejected.
+- **Payments:** clients and sitters can record payment method, amount, and status. A booking has at most one payment record.
+- **The dashboard pet list** still reads the Pet table for a quick overview, while `pets.jsp` is the full management page.
 - **Sound:** the button in the top right turns the music on and off. It remembers your choice between pages. Browsers block sound until you click something on the page, so the music may start on your first click.
 - **Fonts** load from the internet. Offline, the pages still work but look a little plainer.
 - **Tables are read straight from MySQL.** You don't need to edit any code when you add new tables. Just refresh the page.
@@ -101,7 +118,7 @@ Replace `<your-project-name>` with your Eclipse project's name. Plain `http://lo
 | HTTP 404 at `localhost:8080/` | Open `localhost:8080/<your-project-name>/` instead, or set the context root to `/` (see step 5). |
 | 404 at your project address too | Make sure `index.jsp` is directly inside `src/main/webapp/`, and that your project is listed under the Tomcat server in the Servers tab. |
 | "The MySQL driver is missing" | The jar is not in `WEB-INF/lib/`. Add it and restart Tomcat. |
-| "MySQL rejected the username or password" | Fix `db.user` or `db.password` in `db.properties`. |
+| "MySQL rejected the username or password" | Fix `db.user` or `db.password` in `META-INF/db.properties`. |
 | "The database name in db.url does not exist" | The schema name in `db.url` is wrong. Copy it exactly from MySQL Workbench. |
 | "Tomcat could not reach MySQL" | Start the MySQL server and check the port in `db.url`. |
 | Red error marks on JSP files | Set the Targeted Runtime to your Tomcat (step 4). |

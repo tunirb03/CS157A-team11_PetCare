@@ -9,7 +9,7 @@ src/main/webapp/
 ├── index.jsp          Welcome page ("welcome to petcare!")
 ├── start.jsp          Pick "Own a pet?" or "Wanna take care of pets?"
 ├── account.jsp        Sign-up and log-in form
-├── dashboard.jsp      Dashboard with your pets and database tables
+├── dashboard.jsp      Role-specific owner or sitter dashboard
 ├── table.jsp          Shows the rows of one table
 ├── pets.jsp           Add, edit, and delete pet profiles
 ├── services.jsp       Service directory and sitter service management
@@ -50,27 +50,27 @@ Tomcat only loads jars from this folder. Adding the jar to the Eclipse Build Pat
 
 ### 3. Create the PetCare tables
 
-Open `schema.sql` in MySQL Workbench and run it. It creates the `petcare`
-database and the 14 tables required by the proposal: `User`, `Client`,
-`Sitter`, `Address`, `Pet`, `Service`, `Booking`, `BookingPet`,
-`BookingService`, `CareInstruction`, `Payment`, `Review`, `CareEvent`,
-and `AuditLog`. The script also inserts demonstration data for screenshots.
+Open `schema.sql` in MySQL Workbench and run it. It creates the `petcare_model`
+database and the 12 entity tables represented in the data model: `User`,
+`Client`, `Sitter`, `Address`, `Pet`, `Service`, `Booking`,
+`CareInstruction`, `Payment`, `Review`, `CareEvent`, and `AuditLog`.
+The script also inserts demonstration data for screenshots.
 
 ### 4. Change the schema name and password
 
 Open `src/main/webapp/META-INF/db.properties`. It looks like this:
 
 ```
-db.url=jdbc:mysql://localhost:3306/petcare?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-db.user=root
-db.password=change_me
+db.url=jdbc:mysql://localhost:3306/petcare14?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+db.user=petcare_user
+db.password=YOUR_MYSQL_USER_PASSWORD
 ```
 
 Change three things:
 
-- **Schema name:** replace `petcare` in `db.url` with your schema name. This is the name shown under "Schemas" in MySQL Workbench. Only change that one word.
-- **Username:** replace `root` if you log in to MySQL with a different user.
-- **Password:** replace `change_me` with your MySQL password.
+- **Schema name:** use `petcare_model` or the schema where you ran the new script.
+- **Username:** use the MySQL account that has access to that schema.
+- **Password:** use that MySQL account's password.
 
 If your MySQL server uses a port other than 3306, change `3306` too.
 
@@ -97,7 +97,7 @@ Replace `<your-project-name>` with your Eclipse project's name. Plain `http://lo
 1. **Welcome page:** the title, a faded picture, and two buttons: Get started and Log in.
 2. **Choice page:** a dog ("Own a pet?") and a cat ("Wanna take care of pets?").
 3. **Form page:** sign up or log in, with the snake picture.
-4. **Dashboard:** a yellow tag saying "Connected to" your schema name, a list of your pets, and a list of your tables with row counts. Click a table to see its rows.
+4. **Dashboard:** owners see pet, service, booking, and payment actions; sitters see service, booking, and payment management actions. The page no longer exposes every database table as the main user interface.
 
 ## Good to know
 
@@ -106,10 +106,9 @@ Replace `<your-project-name>` with your Eclipse project's name. Plain `http://lo
 - **Services:** clients can view active services; sitters can add, edit, and deactivate services.
 - **Bookings:** clients can request a booking and cancel it. The sitter can update booking status. Overlapping active bookings are rejected.
 - **Payments:** clients and sitters can record payment method, amount, and status. A booking has at most one payment record.
-- **The dashboard pet list** still reads the Pet table for a quick overview, while `pets.jsp` is the full management page.
+- **Role separation:** owners can manage only their own pets and bookings; sitters can manage only their own services and assigned bookings.
 - **Sound:** the button in the top right turns the music on and off. It remembers your choice between pages. Browsers block sound until you click something on the page, so the music may start on your first click.
 - **Fonts** load from the internet. Offline, the pages still work but look a little plainer.
-- **Tables are read straight from MySQL.** You don't need to edit any code when you add new tables. Just refresh the page.
 
 ## Troubleshooting
 

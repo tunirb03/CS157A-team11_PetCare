@@ -3,7 +3,6 @@
 <%
     if (!isLoggedIn(session)) { response.sendRedirect("index.jsp"); return; }
     int userId=(Integer)session.getAttribute("userId"); boolean sitterUser=isSitter(session); String message=null,error=null;
-    List<String> tables = new ArrayList<>(); String current = null;
     if ("POST".equalsIgnoreCase(request.getMethod())) {
         try (Connection c=openConnection(application)) {
             int bookingId=intParam(request.getParameter("bookingId"),0); boolean allowed=false;

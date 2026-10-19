@@ -28,7 +28,7 @@
                         "FROM `User` u WHERE u.Email=?")) {
                     ps.setString(1, email);
                     try (ResultSet rs = ps.executeQuery()) {
-                        if (!rs.next() || !"ACTIVE".equals(rs.getString("AccountStatus")) || !verifyPassword(password, rs.getString("PasswordHash"))) {
+                        if (!rs.next() || !"ACTIVE".equals(rs.getString("AccountStatus")) || !verifyPassword(password, rs.getString("PasswordHash")) || !role.equals("sitter".equals(rs.getString("role")) ? "sitter" : "owner")) {
                             error = "The email or password is incorrect.";
                         } else {
                             session.setAttribute("userId", rs.getInt("UserID"));

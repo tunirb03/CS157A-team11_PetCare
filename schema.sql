@@ -1,9 +1,9 @@
-CREATE DATABASE IF NOT EXISTS petcare;
-USE petcare;
+CREATE DATABASE IF NOT EXISTS petcare_model;
+USE petcare_model;
 
--- The proposal requires these 14 tables:
--- User, Client, Sitter, Address, Pet, Service, Booking, BookingPet,
--- BookingService, CareInstruction, Payment, Review, CareEvent, AuditLog.
+-- Tables represented in the approved data model:
+-- User, Client, Sitter, Address, Pet, Service, Booking,
+-- CareInstruction, Payment, Review, CareEvent, AuditLog.
 
 CREATE TABLE IF NOT EXISTS `User` (
     UserID INT PRIMARY KEY AUTO_INCREMENT,
@@ -54,9 +54,6 @@ CREATE TABLE IF NOT EXISTS Pet (
     FavoriteToys VARCHAR(255),
     EmergencyNotes TEXT,
     PhotoURL VARCHAR(255),
-    FeedingInstructions TEXT,
-    MedicationNeeds TEXT,
-    BehavioralNotes TEXT,
     FOREIGN KEY (OwnerID) REFERENCES Client(UserID) ON DELETE CASCADE
 );
 
@@ -67,7 +64,7 @@ CREATE TABLE IF NOT EXISTS Service (
     Category VARCHAR(50) NOT NULL,
     Description TEXT,
     Price DECIMAL(10,2) NOT NULL,
-    DurationMinutes INT NOT NULL,
+    Duration INT NOT NULL,
     Capacity INT NOT NULL DEFAULT 1,
     AvailabilityStatus ENUM('AVAILABLE','UNAVAILABLE') NOT NULL DEFAULT 'AVAILABLE',
     FOREIGN KEY (SitterID) REFERENCES Sitter(UserID)
@@ -77,6 +74,8 @@ CREATE TABLE IF NOT EXISTS Booking (
     BookingID INT PRIMARY KEY AUTO_INCREMENT,
     ClientID INT NOT NULL,
     SitterID INT NOT NULL,
+    PetID INT NOT NULL,
+    ServiceID INT NOT NULL,
     AddressID INT,
     StartDateTime DATETIME NOT NULL,
     EndDateTime DATETIME NOT NULL,
@@ -84,25 +83,10 @@ CREATE TABLE IF NOT EXISTS Booking (
     CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (ClientID) REFERENCES Client(UserID),
     FOREIGN KEY (SitterID) REFERENCES Sitter(UserID),
+    FOREIGN KEY (PetID) REFERENCES Pet(PetID),
+    FOREIGN KEY (ServiceID) REFERENCES Service(ServiceID),
     FOREIGN KEY (AddressID) REFERENCES Address(AddressID),
     CHECK (EndDateTime > StartDateTime)
-);
-
-CREATE TABLE IF NOT EXISTS BookingPet (
-    BookingID INT NOT NULL,
-    PetID INT NOT NULL,
-    PRIMARY KEY (BookingID, PetID),
-    FOREIGN KEY (BookingID) REFERENCES Booking(BookingID) ON DELETE CASCADE,
-    FOREIGN KEY (PetID) REFERENCES Pet(PetID) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS BookingService (
-    BookingID INT NOT NULL,
-    ServiceID INT NOT NULL,
-    PriceAtBooking DECIMAL(10,2) NOT NULL,
-    PRIMARY KEY (BookingID, ServiceID),
-    FOREIGN KEY (BookingID) REFERENCES Booking(BookingID) ON DELETE CASCADE,
-    FOREIGN KEY (ServiceID) REFERENCES Service(ServiceID)
 );
 
 CREATE TABLE IF NOT EXISTS CareInstruction (
@@ -114,7 +98,8 @@ CREATE TABLE IF NOT EXISTS CareInstruction (
     BehavioralNotes TEXT,
     EmergencyNotes TEXT,
     UNIQUE (BookingID, PetID),
-    FOREIGN KEY (BookingID, PetID) REFERENCES BookingPet(BookingID, PetID) ON DELETE CASCADE
+    FOREIGN KEY (BookingID) REFERENCES Booking(BookingID) ON DELETE CASCADE,
+    FOREIGN KEY (PetID) REFERENCES Pet(PetID) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS Payment (
@@ -146,7 +131,8 @@ CREATE TABLE IF NOT EXISTS CareEvent (
     PetID INT NOT NULL,
     EventType ENUM('DropOff','PickUp') NOT NULL,
     EventTime DATETIME NOT NULL,
-    FOREIGN KEY (BookingID, PetID) REFERENCES BookingPet(BookingID, PetID) ON DELETE CASCADE
+    FOREIGN KEY (BookingID) REFERENCES Booking(BookingID) ON DELETE CASCADE,
+    FOREIGN KEY (PetID) REFERENCES Pet(PetID) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS AuditLog (
@@ -198,22 +184,19 @@ INSERT IGNORE INTO Pet(PetID,OwnerID,PetName,Species,Breed,Age,Gender,Color,Favo
 (7,7,'Max','Dog','Labrador',1,'Male','Black','Frisbee','High energy'),(8,8,'Daisy','Cat','Ragdoll',4,'Female','White and gray','Catnip mouse','Shy around strangers'),
 (9,9,'Rocky','Dog','Husky',5,'Male','Black and white','Rubber ball','Must stay leashed'),(10,10,'Nala','Rabbit','Lionhead',2,'Female','Tan','Willow sticks','Fresh hay required');
 
-INSERT IGNORE INTO Service(ServiceID,SitterID,ServiceName,Category,Description,Price,DurationMinutes,Capacity) VALUES
+INSERT IGNORE INTO Service(ServiceID,SitterID,ServiceName,Category,Description,Price,Duration,Capacity) VALUES
 (1,11,'Dog Walking','Walking','Neighborhood walk',28,30,1),(2,11,'Extended Dog Walk','Walking','Long exercise walk',45,60,1),
 (3,11,'Day Care','Day Care','Daytime supervision',45,480,5),(4,11,'Overnight Boarding','Boarding','Overnight care',63,1440,2),
 (5,11,'House Sitting','House Sitting','Care at the client home',75,1440,1),(6,11,'Puppy Visit','Drop-in','Feeding and play visit',25,30,1),
 (7,11,'Medication Visit','Drop-in','Medication and wellness check',30,30,1),(8,11,'Cat Sitting','Cat Care','Cat feeding and litter care',32,45,2),
 (9,11,'Holiday Boarding','Boarding','Holiday overnight care',80,1440,2),(10,11,'Pet Taxi','Transportation','Local pet transportation',35,45,1);
 
-INSERT IGNORE INTO Booking(BookingID,ClientID,SitterID,AddressID,StartDateTime,EndDateTime,Status) VALUES
-(1,1,11,1,'2026-10-01 09:00:00','2026-10-01 09:30:00','COMPLETED'),(2,2,11,2,'2026-10-02 10:00:00','2026-10-02 10:45:00','COMPLETED'),
-(3,3,11,3,'2026-10-03 08:00:00','2026-10-03 08:30:00','COMPLETED'),(4,4,11,4,'2026-10-04 12:00:00','2026-10-04 13:00:00','COMPLETED'),
-(5,5,11,5,'2026-10-05 14:00:00','2026-10-05 14:45:00','COMPLETED'),(6,6,11,6,'2026-10-06 09:00:00','2026-10-06 09:30:00','COMPLETED'),
-(7,7,11,7,'2026-10-07 11:00:00','2026-10-07 11:30:00','COMPLETED'),(8,8,11,8,'2026-10-08 15:00:00','2026-10-08 15:45:00','COMPLETED'),
-(9,9,11,9,'2026-10-09 16:00:00','2026-10-09 16:45:00','COMPLETED'),(10,10,11,10,'2026-10-10 13:00:00','2026-10-10 13:45:00','COMPLETED');
-
-INSERT IGNORE INTO BookingPet(BookingID,PetID) VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10);
-INSERT IGNORE INTO BookingService(BookingID,ServiceID,PriceAtBooking) VALUES (1,1,28),(2,8,32),(3,1,28),(4,2,45),(5,8,32),(6,7,30),(7,1,28),(8,8,32),(9,2,45),(10,6,25);
+INSERT IGNORE INTO Booking(BookingID,ClientID,SitterID,PetID,ServiceID,AddressID,StartDateTime,EndDateTime,Status) VALUES
+(1,1,11,1,1,1,'2026-10-01 09:00:00','2026-10-01 09:30:00','COMPLETED'),(2,2,11,2,8,2,'2026-10-02 10:00:00','2026-10-02 10:45:00','COMPLETED'),
+(3,3,11,3,1,3,'2026-10-03 08:00:00','2026-10-03 08:30:00','COMPLETED'),(4,4,11,4,2,4,'2026-10-04 12:00:00','2026-10-04 13:00:00','COMPLETED'),
+(5,5,11,5,8,5,'2026-10-05 14:00:00','2026-10-05 14:45:00','COMPLETED'),(6,6,11,6,7,6,'2026-10-06 09:00:00','2026-10-06 09:30:00','COMPLETED'),
+(7,7,11,7,1,7,'2026-10-07 11:00:00','2026-10-07 11:30:00','COMPLETED'),(8,8,11,8,8,8,'2026-10-08 15:00:00','2026-10-08 15:45:00','COMPLETED'),
+(9,9,11,9,2,9,'2026-10-09 16:00:00','2026-10-09 16:45:00','COMPLETED'),(10,10,11,10,6,10,'2026-10-10 13:00:00','2026-10-10 13:45:00','COMPLETED');
 INSERT IGNORE INTO CareInstruction(BookingID,PetID,FeedingInstructions,MedicationNeeds,BehavioralNotes,EmergencyNotes) VALUES
 (1,1,'Breakfast at 8 AM','None','Friendly','Call owner if limping'),(2,2,'Wet food at 6 PM','None','Shy','Keep indoors'),(3,3,'Small meals twice daily','None','Pulls on leash','Sensitive stomach'),
 (4,4,'Regular food','None','Calm','Avoid stairs'),(5,5,'Dry food available','None','Quiet','Indoor only'),(6,6,'Feed after medication','Heart medication','Gentle','Give medication with food'),

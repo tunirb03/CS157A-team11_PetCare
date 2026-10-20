@@ -1,6 +1,8 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="/WEB-INF/jspf/db.jspf" %>
 <%
+    // This page shows raw table rows (including password hashes), so only logged-in users may open it
+    if (!isLoggedIn(session)) { response.sendRedirect("index.jsp"); return; }
     final int LIMIT = 500;
     String requested = request.getParameter("name");
     List<String> tables = new ArrayList<>();

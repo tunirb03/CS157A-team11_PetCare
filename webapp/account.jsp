@@ -28,8 +28,14 @@
                         "FROM `User` u WHERE u.Email=?")) {
                     ps.setString(1, email);
                     try (ResultSet rs = ps.executeQuery()) {
-                        if (!rs.next() || !"ACTIVE".equals(rs.getString("AccountStatus")) || !verifyPassword(password, rs.getString("PasswordHash")) || !role.equals("sitter".equals(rs.getString("role")) ? "sitter" : "owner")) {
+                        if (!rs.next() || !verifyPassword(password, rs.getString("PasswordHash"))) {
                             error = "The email or password is incorrect.";
+                        } else if (!"ACTIVE".equals(rs.getString("AccountStatus"))) {
+                            error = "This account is suspended.";
+                        } else if (!role.equals("sitter".equals(rs.getString("role")) ? "sitter" : "owner")) {
+                            error = "sitter".equals(rs.getString("role"))
+                                ? "This is a pet sitter account. Go back and choose \"Wanna take care of pets?\" to log in."
+                                : "This is a pet owner account. Go back and choose \"Own a pet?\" to log in.";
                         } else {
                             session.setAttribute("userId", rs.getInt("UserID"));
                             session.setAttribute("userName", rs.getString("FullName"));

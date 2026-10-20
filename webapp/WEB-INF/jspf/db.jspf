@@ -73,7 +73,7 @@
         if (v.equals("confirmed") || v.equals("paid")) return "chip-confirmed";
         if (v.equals("in progress") || v.equals("in_progress")) return "chip-progress";
         if (v.equals("completed")) return "chip-completed";
-        if (v.equals("cancelled") || v.equals("canceled") || v.equals("refunded")) return "chip-cancelled";
+        if (v.equals("cancelled") || v.equals("canceled") || v.equals("refunded") || v.equals("declined")) return "chip-cancelled";
         return null;
     }
 
@@ -111,7 +111,18 @@
     }
 
     private boolean verifyPassword(String password, String stored) throws Exception {
-        String[] parts = stored == null ? new String[0] : stored.split(":", 2);
+        if (stored == null || password == null) return false;
+        // The sample rows in petcare_manager.sql use SHA2('pw_name',256), which MySQL stores as 64 hex characters.
+        // New accounts made on the sign-up page use the stronger salted format "salt:hash" below.
+        if (stored.matches("[0-9a-fA-F]{64}")) {
+            byte[] d = java.security.MessageDigest.getInstance("SHA-256")
+                .digest(password.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte x : d) hex.append(String.format("%02x", x));
+            return java.security.MessageDigest.isEqual(
+                hex.toString().getBytes(), stored.toLowerCase().getBytes());
+        }
+        String[] parts = stored.split(":", 2);
         if (parts.length != 2) return false;
         byte[] salt = java.util.Base64.getDecoder().decode(parts[0]);
         byte[] expected = java.util.Base64.getDecoder().decode(parts[1]);
@@ -133,5 +144,71 @@
 
     private boolean isSitter(jakarta.servlet.http.HttpSession session) {
         return isLoggedIn(session) && "sitter".equals(session.getAttribute("role"));
+    }
+
+    // ---- Helpers that match the petcare_manager schema ----
+
+    // Allowed values of the ENUM columns, copied from petcare_manager.sql
+    private static final String[] SERVICE_CATEGORIES = {"WALKING", "BOARDING", "DAYCARE", "HOUSE_SITTING"};
+    private static final String[] BOOKING_STATUSES = {"REQUESTED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "DECLINED"};
+    private static final String[] ACTIVE_STATUSES = {"REQUESTED", "CONFIRMED", "IN_PROGRESS"};
+    private static final String[] PAYMENT_METHODS = {"CASH", "CREDIT_CARD", "VENMO", "ZELLE"};
+    private static final String[] PAYMENT_STATUSES = {"PENDING", "PAID", "REFUNDED"};
+    private static final String[] PET_GENDERS = {"Male", "Female", "Unknown"};
+
+    // "CREDIT_CARD" -> "Credit card", "IN_PROGRESS" -> "In progress"
+    private String label(String value) {
+        if (value == null) return "";
+        String s = value.replace('_', ' ').toLowerCase();
+        return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    // Returns value only if it is one of the allowed values, otherwise null
+    private String pick(String value, String[] allowed) {
+        if (value == null) return null;
+        for (String a : allowed) if (a.equalsIgnoreCase(value.trim())) return a;
+        return null;
+    }
+
+    // Builds <option> tags for a dropdown, with the current value selected
+    private String options(String[] values, String selected) {
+        StringBuilder b = new StringBuilder();
+        for (String v : values) {
+            b.append("<option value=\"").append(esc(v)).append('"');
+            if (v.equalsIgnoreCase(selected == null ? "" : selected)) b.append(" selected");
+            b.append('>').append(esc(label(v))).append("</option>");
+        }
+        return b.toString();
+    }
+
+    // Trimmed text, or null when the box was left empty
+    private String text(String value) {
+        if (value == null) return null;
+        String t = value.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    // Reads a datetime-local box ("2026-10-25T08:00") as a date and time with no time zone attached
+    private java.time.LocalDateTime parseLocal(String value) {
+        String v = text(value);
+        if (v == null) return null;
+        try { return java.time.LocalDateTime.parse(v.length() == 16 ? v + ":00" : v); }
+        catch (Exception e) { return null; }
+    }
+
+    // "2026-08-01 09:00:00" -> "Aug 1, 2026, 9:00 AM". Read DATETIME columns with rs.getString so no time zone shift happens.
+    private String dt(String value) {
+        if (value == null) return "";
+        try {
+            java.time.LocalDateTime t = java.time.LocalDateTime.parse(value.trim().replace(' ', 'T').replaceAll("\\.\\d+$", ""));
+            return t.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy, h:mm a", java.util.Locale.US));
+        } catch (Exception e) { return value; }
+    }
+
+    // Writes a row to AuditLog. If it fails, the page keeps working.
+    private void audit(Connection c, int userId, String action, String description) {
+        try (PreparedStatement ps = c.prepareStatement("INSERT INTO AuditLog(UserID,Action,Description) VALUES(?,?,?)")) {
+            ps.setInt(1, userId); ps.setString(2, action); ps.setString(3, description); ps.executeUpdate();
+        } catch (Exception ignored) { }
     }
 %>

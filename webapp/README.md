@@ -1,124 +1,110 @@
-# PetCare Manager: Frontend
+# PetCare Manager (Team 11)
 
-The web pages for PetCare Manager (Team 11). They run on Apache Tomcat and read data from a MySQL database.
+The web app for PetCare Manager. The pages run on Apache Tomcat and read and write the `petcare_manager` MySQL database (the 14-table schema from our report).
 
-## What's in this repo
+## How the pieces connect
 
 ```
-src/main/webapp/
-├── index.jsp          Welcome page ("welcome to petcare!")
+Browser  --->  Tomcat (the JSP pages)  --->  MySQL (petcare_manager)
+ (user clicks)   (Java code runs the SQL)       (the 14 tables)
+```
+
+Each JSP page has two parts. The top part is Java: it reads the form, runs SQL with a `PreparedStatement`, and saves or loads rows. The bottom part is HTML that shows the results. The shared database code (connection, password checks, helpers) is in `WEB-INF/jspf/db.jspf`, and the login details are in `META-INF/db.properties`.
+
+## What's in this folder
+
+```
+webapp/
+├── index.jsp          Welcome page
 ├── start.jsp          Pick "Own a pet?" or "Wanna take care of pets?"
-├── account.jsp        Sign-up and log-in form
-├── dashboard.jsp      Role-specific owner or sitter dashboard
-├── table.jsp          Shows the rows of one table
-├── pets.jsp           Add, edit, and delete pet profiles
-├── services.jsp       Service directory and sitter service management
-├── bookings.jsp       Booking requests and sitter status management
-├── payments.jsp       Payment records and payment history
-├── css/               Page styles
-├── js/sound.js        The sound on/off button
-├── assets/img/        Pictures (dog, cat, girl, snake)
-├── assets/sound/      Background music
+├── account.jsp        Sign up and log in          -> User, Client, Sitter
+├── dashboard.jsp      Owner or sitter dashboard   -> Pet, Service, Booking (counts)
+├── pets.jsp           Add, edit, delete pets      -> Pet
+├── services.jsp       Browse or manage services   -> Service, Sitter
+├── bookings.jsp       Request and manage bookings -> Booking, BookingPet, BookingService,
+│                                                     CareInstruction, Address
+├── payments.jsp       Record payments             -> Payment
+├── table.jsp          Raw rows of one table (logged-in users only)
+├── css/, js/, assets/ Styles, sound button, pictures, music
 ├── META-INF/
 │   └── db.properties  Your MySQL login (you must edit this)
 └── WEB-INF/
-    └── jspf/          Shared page pieces and the database code
+    ├── jspf/          Shared page pieces and the database code
+    └── lib/           The MySQL driver (mysql-connector-j-26.7.0.jar), already included
 ```
 
 Keep this folder structure exactly as it is. The pages find each other by path.
 
-## What you need
-
-- Eclipse IDE for Enterprise Java and Web Developers
-- Apache Tomcat 11 (Tomcat 10 also works)
-- Java 17 or newer
-- MySQL Server and MySQL Workbench
-- The MySQL driver: `mysql-connector-j-<version>.jar`
-  (download from https://dev.mysql.com/downloads/connector/j/, choose "Platform Independent")
+Every page also writes to `AuditLog` when something changes (new booking, status change, payment, service edit).
 
 ## Setup
 
-### 1. Copy the files into your project
+### 1. Create the database
 
-Copy everything inside `src/main/webapp/` into your Eclipse project's `src/main/webapp/` folder. Your own files there (like other JSP pages, `META-INF`, and `web.xml`) can stay.
+Run `petcare_manager.sql` in MySQL Workbench. It creates the `petcare_manager` schema with all 14 tables and the sample rows.
 
-### 2. Add the MySQL driver
+### 2. Put in your MySQL login
 
-Put the `mysql-connector-j` jar file in `src/main/webapp/WEB-INF/lib/`. Create the `lib` folder if it doesn't exist.
-
-Tomcat only loads jars from this folder. Adding the jar to the Eclipse Build Path is not enough.
-
-### 3. Create the PetCare tables
-
-Open `schema.sql` in MySQL Workbench and run it. It creates the `petcare_model`
-database and the 12 entity tables represented in the data model: `User`,
-`Client`, `Sitter`, `Address`, `Pet`, `Service`, `Booking`,
-`CareInstruction`, `Payment`, `Review`, `CareEvent`, and `AuditLog`.
-The script also inserts demonstration data for screenshots.
-
-### 4. Change the schema name and password
-
-Open `src/main/webapp/META-INF/db.properties`. It looks like this:
+Open `META-INF/db.properties`:
 
 ```
-db.url=jdbc:mysql://localhost:3306/petcare14?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-db.user=petcare_user
-db.password=YOUR_MYSQL_USER_PASSWORD
+db.url=jdbc:mysql://localhost:3306/petcare_manager?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+db.user=root
+db.password=change_me
 ```
 
-Change three things:
+- Replace `change_me` with your MySQL password (the one you use in Workbench).
+- Change `root` only if you log in to MySQL with a different user.
+- Change `petcare_manager` only if your schema has a different name.
 
-- **Schema name:** use `petcare_model` or the schema where you ran the new script.
-- **Username:** use the MySQL account that has access to that schema.
-- **Password:** use that MySQL account's password.
+**Do not upload your real password to GitHub.** Change it back to `change_me` before you commit.
 
-If your MySQL server uses a port other than 3306, change `3306` too.
+### 3. Run it on Tomcat (pick one)
 
-**Do not upload your real password to GitHub.** Before you commit, change the password back to `change_me`.
+**Option A: Tomcat on its own (no Eclipse)**
 
-### 5. Tell Eclipse which Tomcat to use
+1. Copy the whole `webapp` folder into Tomcat's `webapps` folder and rename it `petcare`. You should end up with `<tomcat>/webapps/petcare/index.jsp`.
+2. Start (or restart) Tomcat.
+3. Open http://localhost:8080/petcare/
 
-Right-click your project > Properties > Targeted Runtimes > check your Apache Tomcat > Apply. This also clears most red error marks on JSP files.
+**Option B: Eclipse**
 
-### 6. Run it
+1. Copy everything inside `webapp/` into your project's `src/main/webapp/` folder.
+2. Right-click the project > Properties > Targeted Runtimes > check your Apache Tomcat > Apply.
+3. Right-click the project > Run As > Run on Server.
+4. Open `http://localhost:8080/<your-project-name>/`
 
-Right-click your project > Run As > Run on Server. Then open:
+## Try it with the sample data
 
-```
-http://localhost:8080/<your-project-name>/
-```
+Every sample user's password is `pw_` plus their first name in lowercase.
 
-Replace `<your-project-name>` with your Eclipse project's name. Plain `http://localhost:8080/` will show a 404 unless you change the context root (see below).
+| Who | Email | Password | Log in from |
+|---|---|---|---|
+| Pet owner | emily.carter@gmail.com | pw_emily | "Own a pet?" |
+| Pet sitter | maria@pawsitivecare.com | pw_maria | "Wanna take care of pets?" |
 
-**Optional:** to open the site at plain `http://localhost:8080/`, go to Properties > Web Project Settings, set Context root to `/`, and click Apply. Then in the Servers tab, remove the project from Tomcat, add it back, and restart the server.
+Ryan Patel is suspended in the sample data, so his login is refused on purpose.
 
-## What you should see
-
-1. **Welcome page:** the title, a faded picture, and two buttons: Get started and Log in.
-2. **Choice page:** a dog ("Own a pet?") and a cat ("Wanna take care of pets?").
-3. **Form page:** sign up or log in, with the snake picture.
-4. **Dashboard:** owners see pet, service, booking, and payment actions; sitters see service, booking, and payment management actions. The page no longer exposes every database table as the main user interface.
+A demo walk-through: log in as Emily, request a booking for Biscuit with Maria's "Dog Walk (30 min)", then log out, log in as Maria, and confirm it on the bookings page. Check `Booking`, `BookingPet`, `BookingService`, and `AuditLog` in Workbench to see the new rows.
 
 ## Good to know
 
-- **Authentication:** registration saves a `User` plus a `Client` or `Sitter` subclass account. Login checks a PBKDF2 password hash and creates a session.
-- **Pet profiles:** clients can add, edit, delete, and view their own pets.
-- **Services:** clients can view active services; sitters can add, edit, and deactivate services.
-- **Bookings:** clients can request a booking and cancel it. The sitter can update booking status. Overlapping active bookings are rejected.
-- **Payments:** clients and sitters can record payment method, amount, and status. A booking has at most one payment record.
-- **Role separation:** owners can manage only their own pets and bookings; sitters can manage only their own services and assigned bookings.
-- **Sound:** the button in the top right turns the music on and off. It remembers your choice between pages. Browsers block sound until you click something on the page, so the music may start on your first click.
+- **Passwords:** new accounts are saved with a salted PBKDF2 hash. The sample rows use `SHA2('pw_name',256)`, and the login page accepts both.
+- **Bookings:** a booking saves one `Booking` row, one `BookingPet` row per pet, a `BookingService` row with `PriceAtBooking`, and a `CareInstruction` row per pet if you typed instructions. All of these save together, or none do.
+- **Rules the booking page checks:** the pets must be yours, the service must be available, the end time must be after the start, a pet can't be in two active bookings at once, and a service can't have more overlapping active bookings than its `Capacity`.
+- **Who can do what:** owners manage only their own pets, bookings, and payments. Sitters manage only their own services, and only the bookings and payments assigned to them. The logged-in user's ID always comes from the session, never from the URL.
+- **Dates and times** are read and written exactly as stored in MySQL, so they match what you see in Workbench.
+- **Sound:** the button in the top right turns the music on and off. Browsers block sound until you click something on the page.
 - **Fonts** load from the internet. Offline, the pages still work but look a little plainer.
 
 ## Troubleshooting
 
 | What you see | What to do |
 |---|---|
-| HTTP 404 at `localhost:8080/` | Open `localhost:8080/<your-project-name>/` instead, or set the context root to `/` (see step 5). |
-| 404 at your project address too | Make sure `index.jsp` is directly inside `src/main/webapp/`, and that your project is listed under the Tomcat server in the Servers tab. |
-| "The MySQL driver is missing" | The jar is not in `WEB-INF/lib/`. Add it and restart Tomcat. |
+| HTTP 404 | Open `localhost:8080/petcare/` (Option A) or `localhost:8080/<your-project-name>/` (Option B), not plain `localhost:8080/`. |
 | "MySQL rejected the username or password" | Fix `db.user` or `db.password` in `META-INF/db.properties`. |
 | "The database name in db.url does not exist" | The schema name in `db.url` is wrong. Copy it exactly from MySQL Workbench. |
-| "Tomcat could not reach MySQL" | Start the MySQL server and check the port in `db.url`. |
-| Red error marks on JSP files | Set the Targeted Runtime to your Tomcat (step 4). |
+| "Tomcat could not reach MySQL" | Start the MySQL server and check the port in `db.url` (usually 3306). |
+| "The MySQL driver is missing" | Make sure `WEB-INF/lib/mysql-connector-j-26.7.0.jar` is there, then restart Tomcat. |
+| "Unknown column ..." on a page | Your tables don't match `petcare_manager.sql`. Re-run that script. |
 | Changes don't show up | Restart Tomcat and refresh the browser with Ctrl+F5. |

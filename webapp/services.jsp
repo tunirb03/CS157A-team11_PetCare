@@ -3,10 +3,9 @@
 <%
     if (!isLoggedIn(session)) { response.sendRedirect("index.jsp"); return; }
     boolean sitterUser = isSitter(session);
-    int userId = (Integer) session.getAttribute("userId");   // always from the session, never from the URL
+    int userId = (Integer) session.getAttribute("userId");
     String message = null, error = null;
 
-    // Only sitters can add or edit services, and only their own (SitterID = their UserID)
     if ("POST".equalsIgnoreCase(request.getMethod()) && sitterUser) {
         String action = request.getParameter("action");
         int id = intParam(request.getParameter("id"), 0);
@@ -76,7 +75,6 @@
   <h2 class="section-title"><%= sitterUser ? "My services" : "Available services" %></h2>
   <div class="cards">
 <%
-    // Sitters see all of their own services. Owners see every AVAILABLE service, with the sitter's business name.
     String serviceSql = sitterUser
         ? "SELECT sv.*, st.BusinessName, st.ServiceArea FROM Service sv JOIN Sitter st ON st.UserID=sv.SitterID WHERE sv.SitterID=? ORDER BY sv.ServiceName"
         : "SELECT sv.*, st.BusinessName, st.ServiceArea FROM Service sv JOIN Sitter st ON st.UserID=sv.SitterID WHERE sv.AvailabilityStatus='AVAILABLE' ORDER BY sv.ServiceName";

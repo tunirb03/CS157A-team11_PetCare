@@ -3,12 +3,10 @@
 <%!
     private static final String[] ADDRESS_TYPES = {"HOME", "OTHER"};
 
-    // After a failed request, refill the box with what the user typed so they don't have to start over
     private String keep(jakarta.servlet.http.HttpServletRequest r, boolean on, String name) {
         return on ? esc(r.getParameter(name)) : "";
     }
 
-    // Sample AuditLog rows use names like CONFIRM_BOOKING, so status changes are logged the same way
     private String auditAction(String status) {
         if ("CONFIRMED".equals(status)) return "CONFIRM_BOOKING";
         if ("DECLINED".equals(status)) return "DECLINE_BOOKING";
@@ -18,7 +16,7 @@
 %>
 <%
     if (!isLoggedIn(session)) { response.sendRedirect("index.jsp"); return; }
-    int userId = (Integer) session.getAttribute("userId");   // always from the session, never from the URL
+    int userId = (Integer) session.getAttribute("userId");
     boolean sitterUser = isSitter(session);
     String message = null, error = null;
     boolean createFailed = false;
@@ -29,9 +27,7 @@
         Connection conn = null;
         try {
             conn = openConnection(application);
-
             if ("status".equals(action) && sitterUser) {
-                // A sitter can change the status of bookings assigned to them only
                 String status = pick(request.getParameter("status"), BOOKING_STATUSES);
                 if (status == null) throw new Exception("Please pick a valid status.");
                 try (PreparedStatement ps = conn.prepareStatement("UPDATE Booking SET Status=? WHERE BookingID=? AND SitterID=?")) {
@@ -40,9 +36,7 @@
                 }
                 audit(conn, userId, auditAction(status), "Marked booking " + bookingId + " as " + status);
                 message = "Booking #" + bookingId + " is now " + label(status).toLowerCase() + ".";
-
             } else if ("cancel".equals(action) && !sitterUser) {
-                // An owner can cancel their own booking while it is still requested or confirmed
                 try (PreparedStatement ps = conn.prepareStatement(
                         "UPDATE Booking SET Status='CANCELLED' WHERE BookingID=? AND ClientID=? AND Status IN ('REQUESTED','CONFIRMED')")) {
                     ps.setInt(1, bookingId); ps.setInt(2, userId);
@@ -50,11 +44,8 @@
                 }
                 audit(conn, userId, "CANCEL_BOOKING", "Client cancelled booking " + bookingId);
                 message = "Booking #" + bookingId + " was cancelled.";
-
             } else if ("create".equals(action) && !sitterUser) {
-                createFailed = true;   // set back to false once everything is saved
-
-                // 1. Read and check the form
+                createFailed = true;
                 List<Integer> petIds = new ArrayList<>();
                 String[] picked = request.getParameterValues("petId");
                 if (picked != null) for (String p : picked) { int id = intParam(p, 0); if (id > 0 && !petIds.contains(id)) petIds.add(id); }
@@ -64,16 +55,12 @@
                 java.time.LocalDateTime end = parseLocal(request.getParameter("endTime"));
                 if (start == null || end == null) throw new Exception("Please enter a start and end time.");
                 if (!end.isAfter(start)) throw new Exception("The end time must be after the start time.");
-
-                // 2. Every pet must belong to this owner
                 for (int petId : petIds) {
                     try (PreparedStatement ps = conn.prepareStatement("SELECT 1 FROM Pet WHERE PetID=? AND OwnerID=?")) {
                         ps.setInt(1, petId); ps.setInt(2, userId);
                         try (ResultSet r = ps.executeQuery()) { if (!r.next()) throw new Exception("Please pick only your own pets."); }
                     }
                 }
-
-                // 3. The service must be available. Its sitter becomes the booking's sitter.
                 int sitterId, capacity; java.math.BigDecimal price; String serviceName;
                 try (PreparedStatement ps = conn.prepareStatement(
                         "SELECT SitterID, Price, Capacity, ServiceName FROM Service WHERE ServiceID=? AND AvailabilityStatus='AVAILABLE'")) {
@@ -84,16 +71,12 @@
                         capacity = r.getInt("Capacity"); serviceName = r.getString("ServiceName");
                     }
                 }
-
-                // 4. Capacity: count active bookings of this service that overlap the requested time
                 try (PreparedStatement ps = conn.prepareStatement(
                         "SELECT COUNT(*) FROM Booking b JOIN BookingService bs ON bs.BookingID=b.BookingID " +
                         "WHERE bs.ServiceID=? AND b.Status IN ('REQUESTED','CONFIRMED','IN_PROGRESS') AND b.StartDateTime < ? AND b.EndDateTime > ?")) {
                     ps.setInt(1, serviceId); ps.setObject(2, end); ps.setObject(3, start);
                     try (ResultSet r = ps.executeQuery()) { r.next(); if (r.getInt(1) >= capacity) throw new Exception("That service is fully booked at that time. Try another time."); }
                 }
-
-                // 5. A pet can't be in two active bookings at the same time
                 for (int petId : petIds) {
                     try (PreparedStatement ps = conn.prepareStatement(
                             "SELECT p.PetName FROM Booking b JOIN BookingPet bp ON bp.BookingID=b.BookingID JOIN Pet p ON p.PetID=bp.PetID " +
@@ -102,10 +85,7 @@
                         try (ResultSet r = ps.executeQuery()) { if (r.next()) throw new Exception(r.getString(1) + " already has a booking at that time."); }
                     }
                 }
-
-                // 6. Save everything in one transaction: all rows are saved, or none are
                 conn.setAutoCommit(false);
-
                 int addressId;
                 String addressChoice = request.getParameter("addressId");
                 if ("new".equals(addressChoice) || addressChoice == null) {
@@ -129,7 +109,6 @@
                         try (ResultSet r = ps.executeQuery()) { if (!r.next()) throw new Exception("Please pick one of your own addresses."); }
                     }
                 }
-
                 int newId;
                 try (PreparedStatement ps = conn.prepareStatement(
                         "INSERT INTO Booking(ClientID,SitterID,AddressID,StartDateTime,EndDateTime,Status) VALUES(?,?,?,?,?,'REQUESTED')",
@@ -139,17 +118,12 @@
                     ps.executeUpdate();
                     try (ResultSet keys = ps.getGeneratedKeys()) { keys.next(); newId = keys.getInt(1); }
                 }
-
                 try (PreparedStatement ps = conn.prepareStatement("INSERT INTO BookingPet(BookingID,PetID) VALUES(?,?)")) {
                     for (int petId : petIds) { ps.setInt(1, newId); ps.setInt(2, petId); ps.executeUpdate(); }
                 }
-
-                // PriceAtBooking keeps today's price, even if the sitter changes it later
                 try (PreparedStatement ps = conn.prepareStatement("INSERT INTO BookingService(BookingID,ServiceID,PriceAtBooking) VALUES(?,?,?)")) {
                     ps.setInt(1, newId); ps.setInt(2, serviceId); ps.setBigDecimal(3, price); ps.executeUpdate();
                 }
-
-                // Care instructions are saved once per pet (CareInstruction points to BookingPet)
                 String feeding = text(request.getParameter("feeding")), medication = text(request.getParameter("medication"));
                 String behavior = text(request.getParameter("behavior")), emergency = text(request.getParameter("emergency"));
                 if (feeding != null || medication != null || behavior != null || emergency != null) {
@@ -162,7 +136,6 @@
                         }
                     }
                 }
-
                 audit(conn, userId, "CREATE_BOOKING", "Requested booking " + newId + " for " + serviceName);
                 conn.commit();
                 conn.setAutoCommit(true);
@@ -192,7 +165,6 @@
   <% if (error != null) { %><p class="notice notice-error"><%= esc(error) %></p><% } %>
 
 <% if (!sitterUser) {
-     // Load this owner's pets, the available services, and their saved addresses for the form
      List<String[]> myPets = new ArrayList<>(), services = new ArrayList<>(), addresses = new ArrayList<>();
      try (Connection c = openConnection(application)) {
          try (PreparedStatement p = c.prepareStatement("SELECT PetID, PetName, Species FROM Pet WHERE OwnerID=? ORDER BY PetName")) {
@@ -281,13 +253,11 @@
   <h2 class="section-title"><%= sitterUser ? "Bookings assigned to me" : "Booking history" %></h2>
   <div class="cards">
 <%
-    // Care instructions for this user's bookings, grouped by BookingID
     Map<Integer, List<String[]>> care = new HashMap<>();
     String careSql = "SELECT ci.BookingID, p.PetName, ci.FeedingInstructions, ci.MedicationNeeds, ci.BehavioralNotes, ci.EmergencyNotes " +
         "FROM CareInstruction ci JOIN Pet p ON p.PetID=ci.PetID JOIN Booking b ON b.BookingID=ci.BookingID " +
         "WHERE " + (sitterUser ? "b.SitterID=?" : "b.ClientID=?") + " ORDER BY p.PetName";
 
-    // One row per booking. Pets and services come from the BookingPet and BookingService linking tables.
     String listSql = "SELECT b.BookingID, b.Status, b.StartDateTime, b.EndDateTime, " +
         "cu.FullName AS ClientName, cu.Phone AS ClientPhone, st.BusinessName, " +
         "a.Street, a.City, a.State, a.ZipCode, " +

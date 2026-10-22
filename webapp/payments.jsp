@@ -2,10 +2,9 @@
 <%@ include file="/WEB-INF/jspf/db.jspf" %>
 <%
     if (!isLoggedIn(session)) { response.sendRedirect("index.jsp"); return; }
-    int userId = (Integer) session.getAttribute("userId");   // always from the session, never from the URL
+    int userId = (Integer) session.getAttribute("userId");
     boolean sitterUser = isSitter(session);
     String message = null, error = null;
-    // Owners see their own bookings (ClientID). Sitters see bookings assigned to them (SitterID).
     String ownColumn = sitterUser ? "SitterID" : "ClientID";
 
     if ("POST".equalsIgnoreCase(request.getMethod())) {
@@ -19,8 +18,6 @@
                 p.setInt(1, bookingId); p.setInt(2, userId);
                 try (ResultSet r = p.executeQuery()) { if (!r.next()) throw new Exception("You can only record payments for your own bookings."); }
             }
-            // Payment.BookingID is UNIQUE (0 or 1 payment per booking), so saving again updates the same row.
-            // PaymentTime stays empty while the payment is pending.
             try (PreparedStatement p = c.prepareStatement(
                     "INSERT INTO Payment(BookingID,Amount,PaymentMethod,PaymentStatus,PaymentTime) VALUES(?,?,?,?,IF(?='PENDING',NULL,NOW())) " +
                     "ON DUPLICATE KEY UPDATE Amount=VALUES(Amount), PaymentMethod=VALUES(PaymentMethod), " +
@@ -63,7 +60,7 @@
         try (ResultSet r = p.executeQuery()) {
             while (r.next()) { %>
           <option value="<%= r.getInt("BookingID") %>">#<%= r.getInt("BookingID") %> · <%= esc(r.getString("Services")) %> · <%= dt(r.getString("StartDateTime")) %><%= r.getString("PaymentStatus") == null ? "" : " (currently " + label(r.getString("PaymentStatus")).toLowerCase() + ")" %></option>
-<%          }
+<% }
         }
     } catch (Exception e) { %><option value="">Could not load bookings</option><% } %>
         </select>

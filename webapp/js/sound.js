@@ -1,4 +1,3 @@
-// Sound toggle: remembers on/off across pages and resumes where the song left off.
 (function () {
   var btn = document.getElementById("sound-toggle");
   if (!btn) return;
@@ -27,7 +26,6 @@
 
   function play() {
     audio.play().catch(function () {
-      // Browsers block sound until the visitor clicks something. Start on the first click.
       var resume = function () { if (on) audio.play().catch(function () {}); };
       document.addEventListener("pointerdown", resume, { once: true });
       document.addEventListener("keydown", resume, { once: true });

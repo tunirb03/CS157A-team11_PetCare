@@ -1,10 +1,6 @@
 CREATE DATABASE IF NOT EXISTS petcare_model;
 USE petcare_model;
 
--- Tables represented in the approved data model:
--- User, Client, Sitter, Address, Pet, Service, Booking,
--- CareInstruction, Payment, Review, CareEvent, AuditLog.
-
 CREATE TABLE IF NOT EXISTS `User` (
     UserID INT PRIMARY KEY AUTO_INCREMENT,
     Email VARCHAR(150) NOT NULL UNIQUE,
@@ -144,9 +140,6 @@ CREATE TABLE IF NOT EXISTS AuditLog (
     FOREIGN KEY (UserID) REFERENCES `User`(UserID)
 );
 
--- Demonstration data: ten rows for each table. The sample passwords are
--- placeholders for database screenshots; create a new account in the app
--- to test login because the app creates a real password hash.
 INSERT IGNORE INTO `User`(UserID,Email,PasswordHash,FullName,Phone) VALUES
 (1,'alex@example.com','sample-hash','Alex Chen','555-0101'),(2,'bianca@example.com','sample-hash','Bianca Lee','555-0102'),
 (3,'carlos@example.com','sample-hash','Carlos Rivera','555-0103'),(4,'diana@example.com','sample-hash','Diana Patel','555-0104'),

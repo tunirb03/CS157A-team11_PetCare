@@ -1,6 +1,5 @@
 <%@ page import="java.sql.*, java.util.*, java.io.*" %>
 <%!
-    // Reads the database settings stored outside the public web pages.
     private Properties loadDbProps(ServletContext ctx) throws IOException {
         Properties p = new Properties();
         try (InputStream in = ctx.getResourceAsStream("/META-INF/db.properties")) {
@@ -17,7 +16,6 @@
             p.getProperty("db.url"), p.getProperty("db.user"), p.getProperty("db.password"));
     }
 
-    // Table names come straight from MySQL, so the page only ever queries tables that exist
     private List<String> listTables(Connection c) throws SQLException {
         List<String> names = new ArrayList<>();
         try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery("SHOW TABLES")) {
@@ -37,7 +35,6 @@
         }
     }
 
-    // "booking_pet" -> "Booking pet"
     private String friendly(String table) {
         String s = table.replace('_', ' ').toLowerCase();
         return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
@@ -60,12 +57,6 @@
         return b.toString();
     }
 
-    private String url(String s) {
-        try { return java.net.URLEncoder.encode(s, "UTF-8"); }
-        catch (Exception e) { return s; }
-    }
-
-    // Colors status values (booking and payment) the same way everywhere
     private String chipClass(String value) {
         if (value == null) return null;
         String v = value.trim().toLowerCase();
@@ -77,7 +68,6 @@
         return null;
     }
 
-    // Turns common connection errors into a plain next step
     private String hintFor(Exception e) {
         String m = String.valueOf(e.getMessage());
         if (e instanceof ClassNotFoundException)
@@ -112,8 +102,6 @@
 
     private boolean verifyPassword(String password, String stored) throws Exception {
         if (stored == null || password == null) return false;
-        // The sample rows in petcare_manager.sql use SHA2('pw_name',256), which MySQL stores as 64 hex characters.
-        // New accounts made on the sign-up page use the stronger salted format "salt:hash" below.
         if (stored.matches("[0-9a-fA-F]{64}")) {
             byte[] d = java.security.MessageDigest.getInstance("SHA-256")
                 .digest(password.getBytes(java.nio.charset.StandardCharsets.UTF_8));
@@ -146,31 +134,24 @@
         return isLoggedIn(session) && "sitter".equals(session.getAttribute("role"));
     }
 
-    // ---- Helpers that match the petcare_manager schema ----
-
-    // Allowed values of the ENUM columns, copied from petcare_manager.sql
     private static final String[] SERVICE_CATEGORIES = {"WALKING", "BOARDING", "DAYCARE", "HOUSE_SITTING"};
     private static final String[] BOOKING_STATUSES = {"REQUESTED", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "DECLINED"};
-    private static final String[] ACTIVE_STATUSES = {"REQUESTED", "CONFIRMED", "IN_PROGRESS"};
     private static final String[] PAYMENT_METHODS = {"CASH", "CREDIT_CARD", "VENMO", "ZELLE"};
     private static final String[] PAYMENT_STATUSES = {"PENDING", "PAID", "REFUNDED"};
     private static final String[] PET_GENDERS = {"Male", "Female", "Unknown"};
 
-    // "CREDIT_CARD" -> "Credit card", "IN_PROGRESS" -> "In progress"
     private String label(String value) {
         if (value == null) return "";
         String s = value.replace('_', ' ').toLowerCase();
         return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
-    // Returns value only if it is one of the allowed values, otherwise null
     private String pick(String value, String[] allowed) {
         if (value == null) return null;
         for (String a : allowed) if (a.equalsIgnoreCase(value.trim())) return a;
         return null;
     }
 
-    // Builds <option> tags for a dropdown, with the current value selected
     private String options(String[] values, String selected) {
         StringBuilder b = new StringBuilder();
         for (String v : values) {
@@ -181,14 +162,12 @@
         return b.toString();
     }
 
-    // Trimmed text, or null when the box was left empty
     private String text(String value) {
         if (value == null) return null;
         String t = value.trim();
         return t.isEmpty() ? null : t;
     }
 
-    // Reads a datetime-local box ("2026-10-25T08:00") as a date and time with no time zone attached
     private java.time.LocalDateTime parseLocal(String value) {
         String v = text(value);
         if (v == null) return null;
@@ -196,7 +175,6 @@
         catch (Exception e) { return null; }
     }
 
-    // "2026-08-01 09:00:00" -> "Aug 1, 2026, 9:00 AM". Read DATETIME columns with rs.getString so no time zone shift happens.
     private String dt(String value) {
         if (value == null) return "";
         try {
@@ -205,7 +183,6 @@
         } catch (Exception e) { return value; }
     }
 
-    // Writes a row to AuditLog. If it fails, the page keeps working.
     private void audit(Connection c, int userId, String action, String description) {
         try (PreparedStatement ps = c.prepareStatement("INSERT INTO AuditLog(UserID,Action,Description) VALUES(?,?,?)")) {
             ps.setInt(1, userId); ps.setString(2, action); ps.setString(3, description); ps.executeUpdate();

@@ -1,7 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ include file="/WEB-INF/jspf/db.jspf" %>
 <%!
-    // Fills the 10 Pet columns (PetName ... PhotoURL) in order, starting at position "start"
     private void setPetFields(PreparedStatement ps, int start, jakarta.servlet.http.HttpServletRequest req) throws SQLException {
         ps.setString(start, text(req.getParameter("name")));
         ps.setString(start + 1, text(req.getParameter("species")));
@@ -19,7 +18,7 @@
 <%
     if (!isLoggedIn(session)) { response.sendRedirect("index.jsp"); return; }
     if (isSitter(session)) { response.sendRedirect("dashboard.jsp"); return; }
-    int ownerId = (Integer) session.getAttribute("userId");   // always from the session, never from the URL
+    int ownerId = (Integer) session.getAttribute("userId");
     String message = null, error = null;
 
     if ("POST".equalsIgnoreCase(request.getMethod())) {

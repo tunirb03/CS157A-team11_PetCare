@@ -9,12 +9,16 @@
         <li><a href="bookings.jsp">Manage bookings</a></li>
         <li><a href="payments.jsp">Payments</a></li>
         <li><a href="reviews.jsp">Reviews</a></li>
+        <li><a href="careevents.jsp">Drop-off / pick-up</a></li>
+        <li><a href="reports.jsp">Reports</a></li>
+        <li><a href="clients.jsp">Clients</a></li>
       <% } else { %>
         <li><a href="pets.jsp">My pets</a></li>
         <li><a href="services.jsp">Browse services</a></li>
         <li><a href="bookings.jsp">My bookings</a></li>
         <li><a href="payments.jsp">My payments</a></li>
         <li><a href="reviews.jsp">My reviews</a></li>
+        <li><a href="careevents.jsp">Drop-off / pick-up</a></li>
       <% } %>
     </ul>
   </nav>

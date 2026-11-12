@@ -45,6 +45,9 @@
         <a class="btn btn-primary" href="bookings.jsp">Manage bookings</a>
         <a class="btn btn-outline" href="payments.jsp">View payments</a>
         <a class="btn btn-outline" href="reviews.jsp">Reviews</a>
+        <a class="btn btn-outline" href="careevents.jsp">Drop-off / pick-up</a>
+        <a class="btn btn-outline" href="reports.jsp">Reports</a>
+        <a class="btn btn-outline" href="clients.jsp">Clients</a>
       </section>
       <section class="pets"><div class="pets-body"><h2>Sitter overview</h2>
         <p>You currently manage <strong><%= firstCount %></strong> service<%= firstCount == 1 ? "" : "s" %>.</p>
@@ -57,6 +60,7 @@
         <a class="btn btn-primary" href="bookings.jsp">My bookings</a>
         <a class="btn btn-outline" href="payments.jsp">My payments</a>
         <a class="btn btn-outline" href="reviews.jsp">My reviews</a>
+        <a class="btn btn-outline" href="careevents.jsp">Drop-off / pick-up</a>
       </section>
       <section class="pets"><div class="pets-body"><h2>Owner overview</h2>
         <p>You have <strong><%= firstCount %></strong> pet<%= firstCount == 1 ? "" : "s" %> saved.</p>

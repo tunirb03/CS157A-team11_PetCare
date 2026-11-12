@@ -192,7 +192,7 @@ CREATE TABLE `care_event` (
   `EventType` enum('DROP_OFF','PICK_UP') NOT NULL,
   `EventTime` datetime NOT NULL,
   PRIMARY KEY (`EventID`),
-  KEY `BookingID` (`BookingID`,`PetID`),
+  UNIQUE KEY `uq_care_event_type` (`BookingID`,`PetID`,`EventType`),
   CONSTRAINT `care_event_ibfk_1` FOREIGN KEY (`BookingID`, `PetID`) REFERENCES `booking_pet` (`BookingID`, `PetID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
